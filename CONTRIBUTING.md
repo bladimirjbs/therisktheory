@@ -26,7 +26,7 @@ A mathematical implementation must include:
 - [ ] assumptions and parameter domain;
 - [ ] NumPy/SciPy vectorized implementation;
 - [ ] type hints;
-- [ ] NumPy-style docstring;
+- [ ] Google-style docstring;
 - [ ] bibliographic reference;
 - [ ] analytical unit test;
 - [ ] vectorized-input test;
@@ -58,6 +58,29 @@ The contributor is responsible for checking every formula, derivation, assumptio
 - No unnecessary row-by-row loops
 - Public functions require type hints and docstrings
 - New behavior requires tests
+
+## Style
+
+The rules below are the ones configured in `pyproject.toml` and enforced by
+CI, so a pull request that follows them will pass the checks.
+
+- PEP 8 and the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+- Lines of at most 80 characters (`line-length = 80`).
+- Google-style docstrings with `Args:`, `Returns:` and `Raises:` sections
+  (ruff `D` rules, `convention = "google"`). Test functions and example
+  scripts do not need docstrings.
+- Absolute imports (`from therisktheory import ...`), sorted by ruff.
+- Imports used only in type annotations go under `TYPE_CHECKING`.
+
+Before opening a pull request, run the same commands as CI:
+
+```bash
+ruff check .
+ruff format --check .
+pytest --cov=therisktheory --cov-report=term-missing
+```
+
+`ruff format .` fixes the formatting automatically.
 
 ## Pull requests
 
