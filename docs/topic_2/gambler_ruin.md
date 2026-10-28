@@ -50,10 +50,25 @@ One can check directly that both expressions satisfy the recurrence and
 the boundary conditions. Letting `a → ∞`: if `p > q`, then `r < 1` and `P_z → r^z`; if `p ≤ q` the
 ruin is certain.
 
-**Numerics.** For `q > p` the code divides numerator and denominator by
-`r^a`, and it writes all differences with `expm1`. This avoids overflow
-for large `a` and loss of precision when `p` is close to `1/2`. Both cases
-are tested.
+**Numerics.** The formulas are algebraically equal to the ones above, but
+each case is written so that two nearly equal numbers are never subtracted:
+
+| Case | Form used | Problem it avoids |
+|---|---|---|
+| `p > q` (`r < 1`) | `r^z (1 - r^(a-z)) / (1 - r^a)` | `r^z - r^a` cancels when both are tiny, so `1e-18` became `0.0` |
+| `p < q` (`r > 1`) | `(1 - s^(a-z)) / (1 - s^a)`, `s = 1/r` | overflow of `r^a` for large `a` |
+| `p = q` | `(a - z) / a` | `1 - z/a` loses digits when `z` is close to `a` |
+
+The differences `1 - r^k` are computed with `expm1`, and `log r` with
+`log1p(-p) - log(p)`, so the result also stays accurate when `p` is close to
+`1/2`.
+
+The `p > q` case was found in the peer review of PR #3: for `p = 0.6`,
+`z = 100`, `a = 1000` the old form returned `0.0` instead of
+`2.4596544265798527e-18`. `examples/gambler_ruin.py` reproduces it, and
+`tests/test_games.py` compares the function with exact rational arithmetic
+(`fractions.Fraction`) using `atol=0`, so that a result of `0.0` cannot pass
+as an approximation of a small probability.
 
 ## Relation with risk theory
 

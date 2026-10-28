@@ -148,13 +148,23 @@ def gambler_ruin_probability(
 
     It is the solution of ``P_z = p P_{z+1} + q P_{z-1}`` with ``P_0 = 1``
     and ``P_a = 0``, derived in ``docs/topic_2/gambler_ruin.md``. With an
-    infinite
-    target the probability of ever being ruined is ``r**z`` if ``p > q`` and
-    ``1`` otherwise. In the notation of Kaas et al. (2008), Section 4.5, this
-    is ``exp(-R z)`` with adjustment coefficient ``R = log(p / q)``.
+    infinite target the probability of ever being ruined is ``r**z`` if
+    ``p > q`` and ``1`` otherwise. In the notation of Kaas et al. (2008),
+    Section 4.5, this is ``exp(-R z)`` with adjustment coefficient
+    ``R = log(p / q)``.
 
-    The formulas are evaluated with ``expm1`` so that they stay accurate for
-    ``p`` close to ``1/2`` and do not overflow for large ``a``.
+    Numerically, each case is written so that no two nearly equal numbers
+    are subtracted:
+
+    * ``p > q``: ``r**z * (1 - r**(a - z)) / (1 - r**a)``, which keeps very
+      small ruin probabilities (for example ``1e-29``) instead of rounding
+      them to ``0``;
+    * ``p < q``: numerator and denominator are divided by ``r**a``, which
+      avoids overflow for large ``a``;
+    * ``p = q``: ``(a - z) / a``, which is exact when ``z`` is close to ``a``.
+
+    The differences ``1 - r**k`` are computed with ``expm1``, so the result
+    stays accurate when ``p`` is close to ``1/2``.
 
     Mathematical conditions:
         * ``z`` and ``a`` are integers (measured in units of the stake) with
@@ -197,16 +207,19 @@ def gambler_ruin_probability(
         raise ValueError("initial_capital must not exceed target_capital")
 
     z, a, p = np.broadcast_arrays(z, a, p)
-    q = 1.0 - p
     finite = np.isfinite(a)
     with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-        log_r = np.log(q) - np.log(p)  # +inf if p == 0, -inf if p == 1
+        # log1p(-p) is log(q) without rounding q = 1 - p first.
+        log_r = np.log1p(-p) - np.log(p)  # +inf if p == 0, -inf if p == 1
         a_fin = np.where(finite, a, 0.0)
-        fair = 1.0 - z / np.where(a_fin > 0, a_fin, 1.0)
-        # q > p: divide numerator and denominator by r**a to avoid overflow.
+        fair = (a_fin - z) / np.where(a_fin > 0, a_fin, 1.0)
+        # q > p (r > 1): divide numerator and denominator by r**a.
         q_wins = np.expm1(-(a_fin - z) * log_r) / np.expm1(-a_fin * log_r)
-        p_wins = (np.expm1(z * log_r) - np.expm1(a_fin * log_r)) / -np.expm1(
-            a_fin * log_r
+        # p > q (r < 1): factor out r**z; both expm1 terms are in (-1, 0).
+        p_wins = (
+            np.exp(z * log_r)
+            * -np.expm1((a_fin - z) * log_r)
+            / -np.expm1(a_fin * log_r)
         )
         no_target = np.where(log_r < 0, np.exp(z * log_r), 1.0)
 

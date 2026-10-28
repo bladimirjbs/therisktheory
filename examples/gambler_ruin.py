@@ -19,3 +19,9 @@ probs, claims = [0.9, 0.08, 0.02], [0.0, 1000.0, 20000.0]
 fair = finetti_ruin.fair_game_expectation(probs, claims)
 print(fair, finetti_ruin.unfair_game_expectation(probs, claims, 1.15 * fair))
 # 480.0 -72.0
+
+# Very small ruin probabilities are kept, not rounded to 0 (review of #3).
+print(finetti_ruin.gambler_ruin_probability(100, 1000, 0.6))
+# 2.4596544265798527e-18
+print(finetti_ruin.gambler_ruin_probability(30, 1000, 0.9))
+# 2.3589824875925706e-29

@@ -1,4 +1,5 @@
 import doctest
+import fractions
 import warnings
 
 import numpy as np
@@ -266,6 +267,59 @@ def test_ruin_is_stable_near_a_fair_game() -> None:
             assert gambler_ruin_probability(3, 10, p).item() == pytest.approx(
                 0.7, abs=1e-5
             )
+
+
+def ruin_exact(z: int, a: int, p: float) -> float:
+    """Ruin probability in exact rational arithmetic, rounded once at the end.
+
+    ``p`` is converted to the exact binary fraction it stores, so the only
+    rounding is the final conversion to float.
+    """
+    p_ = fractions.Fraction(p)
+    q_ = 1 - p_
+    if p_ == q_:
+        return float(fractions.Fraction(a - z, a))
+    r = q_ / p_
+    return float((r**z - r**a) / (1 - r**a))
+
+
+@pytest.mark.parametrize(
+    ("p", "z", "a", "expected"),
+    [
+        # Reported in the review of PR #3: the old formula returned 0.0.
+        (0.6, 100, 1000, 2.4596544265798527e-18),
+        (0.9, 30, 1000, 2.3589824875925706e-29),
+    ],
+)
+def test_small_ruin_probabilities_regression(p, z, a, expected) -> None:
+    # atol=0 so that 0.0 cannot pass as an approximation of 1e-18.
+    result = gambler_ruin_probability(z, a, p)
+    np.testing.assert_allclose(result, expected, rtol=1e-12, atol=0)
+    np.testing.assert_allclose(result, ruin_exact(z, a, p), rtol=1e-12, atol=0)
+
+
+@pytest.mark.parametrize("p", [0.05, 0.3, 0.49, 0.5 - 1e-9, 0.5, 0.51, 0.75])
+@pytest.mark.parametrize(("z", "a"), [(1, 2), (3, 10), (50, 100), (99, 100)])
+def test_ruin_has_full_relative_precision(p, z, a) -> None:
+    # Relative error against exact arithmetic, also when P is tiny or close
+    # to 1, so no branch loses digits by cancellation.
+    result = gambler_ruin_probability(z, a, p).item()
+    assert result == pytest.approx(ruin_exact(z, a, p), rel=1e-12, abs=0)
+
+
+def test_tiny_ruin_probabilities_keep_relative_precision() -> None:
+    for p, z, a in [(0.6, 300, 2000), (0.99, 10, 50), (0.75, 600, 700)]:
+        expected = ruin_exact(z, a, p)
+        # Below machine epsilon: the old formula rounded these to 0.
+        assert 0 < expected < np.finfo(np.float64).eps
+        np.testing.assert_allclose(
+            gambler_ruin_probability(z, a, p), expected, rtol=1e-11, atol=0
+        )
+
+
+def test_fair_game_close_to_target_is_exact() -> None:
+    a = 10**12
+    assert gambler_ruin_probability(a - 1, a, 0.5).item() == 1 / a
 
 
 def test_ruin_does_not_overflow_for_large_targets() -> None:
