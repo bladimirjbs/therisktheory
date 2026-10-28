@@ -125,7 +125,7 @@ A contribution is not complete until it contains:
 - assumptions and domain restrictions;
 - vectorized Python implementation;
 - type hints;
-- NumPy-style docstring;
+- Google-style docstring;
 - bibliographic reference;
 - analytical unit test;
 - boundary/invalid-input tests;
@@ -196,6 +196,15 @@ pytest --cov=therisktheory --cov-report=term-missing
 ruff check .
 ruff format .
 ```
+
+The style rules are configured in `pyproject.toml` and checked in CI:
+
+- PEP 8 and the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html);
+- lines of at most 80 characters;
+- Google-style docstrings (ruff `D` rules with `convention = "google"`);
+- absolute imports, sorted by ruff;
+- CI runs `ruff check .`, `ruff format --check .` and the tests with line and
+  branch coverage.
 
 ## Governance
 
