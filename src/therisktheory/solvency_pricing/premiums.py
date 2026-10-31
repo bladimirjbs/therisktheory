@@ -125,7 +125,9 @@ def expected_value_premium(
     Under these conditions the premium satisfies non-negative loading,
     ``(1 + theta) E[S] >= E[S]``, additivity and proportionality, but not
     no rip-off, consistency or iterativity when ``theta > 0`` (Section 5.3.1,
-    pp. 120-121, and Table 5.1, p. 122).
+    pp. 120-121, and Table 5.1, p. 122). Iterativity asks that
+    ``pi[pi[S | Y]] = pi[S]`` for every ``Y``; here the left side is
+    ``(1 + theta)**2 E[S]`` by the tower property.
 
     Args:
         expected_loss: Expected aggregate claims ``E[S]``, for example the
