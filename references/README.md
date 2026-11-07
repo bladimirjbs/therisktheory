@@ -24,9 +24,17 @@ DOI: [10.1007/978-3-540-70998-5](https://doi.org/10.1007/978-3-540-70998-5)
 | Properties of the expected value principle | Section 5.3.1, pp. 120–121; Table 5.1, p. 122 |
 | Martingale as the fortune of a gambler in fair games (Topic 2) | Remark 4.4.3, p. 97 |
 | Discrete-time ruin model, adjustment coefficient, eqs. (4.36)–(4.37) (Topic 2) | Section 4.5, p. 98 |
+| Credibility premium `z X_j + (1 - z) X`, objectives of credibility theory (Topic 4) | Section 8.1, eq. (8.1), pp. 203–204 |
+| Balanced Bühlmann model, variance components (Topic 4) | Section 8.2, eqs. (8.5)–(8.6), p. 206 |
+| Optimal credibility premium and factor `z = aT/(aT + s²)` (Topic 4) | Theorems 8.2.2 and 8.2.4, eqs. (8.7)–(8.16), pp. 207–209 |
+| Asymptotic properties of `z` (Topic 4) | Remark 8.2.3, p. 209 |
+| Worked example and shrinkage (Topic 4) | Examples 8.2.1 and 8.2.5, pp. 205 and 210 |
+| Virtual experience (Topic 4) | Remark 8.2.7, eq. (8.23), p. 211 |
+| Bühlmann-Straub model, credibility weighted mean `X_zw` (Topic 4) | Eq. (8.32), Theorem 8.4.1, p. 215; Remark 8.4.4, p. 220 |
 
-Modules: `therisktheory.solvency_pricing.premiums` (Topic 1) and
-`therisktheory.finetti_ruin.games` (Topic 2).
+Modules: `therisktheory.solvency_pricing.premiums` (Topic 1),
+`therisktheory.finetti_ruin.games` (Topic 2) and
+`therisktheory.credibility.premium` (Topic 4).
 
 The gambler's ruin probability (Topic 2) is justified by the derivation in
 `docs/topic_2/gambler_ruin.md`, not by a book reference.
