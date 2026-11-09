@@ -134,6 +134,31 @@ From the data of Example 8.2.1 (p. 205), the group means are 100, 110 and
 (110 ± 7.82). `tests/test_credibility_premium.py` recomputes the example from
 the original data.
 
+## Reference check
+
+Every result used here was located in the printed book (page numbers are the
+printed ones, not the PDF page numbers) and checked as follows.
+
+| Result | Location | Checked by hand | Checked by a test |
+|---|---|---|---|
+| Credibility premium `z X_j + (1 − z) X` | eq. (8.1), p. 203 | yes | `test_kaas_example_8_2_5` |
+| Variance components model | eqs. (8.5)–(8.6), p. 206 | yes | `test_buhlmann_premium_is_unbiased_and_mse_optimal` |
+| Optimal `z = aT/(aT + s²)` | eq. (8.10), p. 208; Theorem 8.2.4, p. 209 | yes (a = 100, s² = 64, T = 5 gives 0.8865) | same simulation test |
+| Limits of `z` | Remark 8.2.3, p. 209 | yes | `test_weights_over_periods_feed_the_premium` (joint) |
+| Data of the example | Example 8.2.1, p. 205 | yes | `test_kaas_example_8_2_5` (means, F = 4.588) |
+| Premiums 102.18, 110, 117.82 | Example 8.2.5, p. 210 | yes: the book prints 118.82; 0.782 · 120 + 0.218 · 110 = 117.82 | `test_kaas_example_8_2_5` and the joint test with #12 |
+| Virtual experience | Remark 8.2.7, eq. (8.23), p. 211 | yes (115.07 both ways) | `test_virtual_experience_remark_8_2_7` |
+| `X_zw` and Bühlmann-Straub `z_j` | eq. (8.32), Theorem 8.4.1, p. 215; Remark 8.4.4, p. 220 | yes | `test_buhlmann_straub_balance_with_credibility_weighted_mean` |
+| Poisson-gamma as credibility | eq. (8.60), p. 225 | yes | `test_poisson_gamma_rate_is_a_credibility_premium` |
+
+**About the erratum.** The value 118.82 printed in Example 8.2.5 cannot be
+right: with the factor 0.782 given in the same example, the premiums are
+`110 ± 0.782 · 10`, that is 102.18 and 117.82, symmetric around the overall
+mean 110. The example is recomputed from the original data in two
+independent ways: with the ANOVA ratio `1 − 1/F`, and with Garcia's
+estimators and weight from #12 (`tests/test_joint_credibility_weights.py`).
+Both give 117.82.
+
 ## Independent checks (`tests/test_credibility_premium.py`)
 
 - Example 8.2.5 recomputed from the data of Example 8.2.1.
@@ -145,3 +170,12 @@ the original data.
   imbalance with `X_ww`.
 - Bounds, monotonicity in `z`, components, broadcasting along an axis,
   invalid inputs and overflow.
+
+## Joint tests with #12 (`tests/test_joint_credibility_weights.py`)
+
+With Garcia's `estimate_process_variance`, `estimate_hypothetical_mean_variance`
+and `credibility_weight` on the data of Example 8.2.1, `EPV = 108.97`,
+`VHM = 100 − 108.97/5` and `z = 0.782 = 1 − 1/F`; the premium reproduces
+Example 8.2.5. A second test feeds his weight for several numbers of periods
+into the premium. The tests are skipped when `credibility.weights` is not in
+the branch and run once #12 is merged.
