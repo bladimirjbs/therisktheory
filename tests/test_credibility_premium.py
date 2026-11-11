@@ -257,9 +257,70 @@ def test_overflow() -> None:
     big = np.finfo(np.float64).max
     with warnings.catch_warnings():
         warnings.simplefilter("error")
+        # True components 1.5 * max and 0.5 * (2 max) = max: the first
+        # one really overflows.
         with pytest.raises(OverflowError):
-            credibility.credibility_components(big, -big, 0.5)
+            credibility.credibility_components(big, -big, 0.75)
         with pytest.raises(OverflowError):
             credibility.credibility_premium_properties(
                 [big, -big], 0.0, 0.0, exposures=[2.0, 2.0]
             )
+
+
+@pytest.mark.parametrize(
+    ("x", "m", "z", "correction", "unexplained", "premium"),
+    [
+        # Reported in the review of PR #18: x - m overflows, the results
+        # do not.
+        (1e308, -1e308, 0.5, 1e308, 1e308, 0.0),
+        (-1e308, 1e308, 0.5, -1e308, -1e308, 0.0),
+        (1e308, -1e308, 0.25, 5e307, 1.5e308, -5e307),
+        (
+            np.finfo(np.float64).max,
+            -np.finfo(np.float64).max,
+            0.5,
+            np.finfo(np.float64).max,
+            np.finfo(np.float64).max,
+            0.0,
+        ),
+    ],
+)
+def test_components_no_spurious_overflow(
+    x, m, z, correction, unexplained, premium
+) -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        parts = credibility.credibility_components(x, m, z)
+    assert parts["experience_correction"] == pytest.approx(
+        correction, rel=1e-15
+    )
+    assert parts["unexplained_deviation"] == pytest.approx(
+        unexplained, rel=1e-15
+    )
+    assert parts["premium"] == pytest.approx(premium, abs=1e292)
+
+
+def test_components_keep_accuracy_when_close() -> None:
+    # Close values: x - m is exact here, so z (x - m) must be used
+    # rather than z x - z m, which would lose the small difference.
+    x = np.array([1.0 + 2.0**-40, 1e16 + 2.0, 110.0])
+    m = np.array([1.0, 1e16, 110.0])
+    z = 1.0 / 3.0
+    parts = credibility.credibility_components(x, m, z)
+    np.testing.assert_array_equal(parts["experience_correction"], z * (x - m))
+    np.testing.assert_array_equal(
+        parts["unexplained_deviation"], (1.0 - z) * (x - m)
+    )
+    np.testing.assert_array_equal(
+        parts["experience_correction"] + parts["unexplained_deviation"],
+        [2.0**-40, 2.0, 0.0],
+    )
+
+
+def test_balance_with_full_credibility_for_any_mean() -> None:
+    # sum c_j (1 - z_j) = 0: the portfolio is balanced for any m.
+    for m in (-50.0, 0.0, 110.0, 1e6):
+        props = credibility.credibility_premium_properties(
+            [100.0, 120.0, 90.0], m, [1.0, 1.0, 0.3], exposures=[2.0, 5.0, 0.0]
+        )
+        assert float(props["portfolio_imbalance"]) == 0.0

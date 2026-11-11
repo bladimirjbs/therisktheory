@@ -133,10 +133,8 @@ def credibility_components(
     x, m, z = np.broadcast_arrays(
         *_inputs(individual_mean, collective_mean, weight)
     )
-    with np.errstate(over="ignore", invalid="ignore"):
-        deviation = np.asarray(x - m, dtype=np.float64)
-        correction = np.asarray(z * deviation, dtype=np.float64)
-        unexplained = np.asarray((1.0 - z) * deviation, dtype=np.float64)
+    correction = _scaled_difference(z, x, m)
+    unexplained = _scaled_difference(1.0 - z, x, m)
     for name, value in (
         ("experience_correction", correction),
         ("unexplained_deviation", unexplained),
@@ -171,10 +169,13 @@ def credibility_premium_properties(
     weights ``w_j`` of the Bühlmann-Straub model), the premiums reproduce the
     observed total, ``sum_j c_j P_j = sum_j c_j X_j``, exactly when::
 
-        m = sum_j c_j (1 - z_j) X_j / sum_j c_j (1 - z_j).
+        m = sum_j c_j (1 - z_j) X_j / sum_j c_j (1 - z_j),
 
-    In the balanced model (equal ``z`` and ``c``) this ``m`` is the overall
-    mean (8.11), and in the Bühlmann-Straub model, where
+    provided the denominator ``sum_j c_j (1 - z_j)`` is positive. If it is
+    zero, every term ``c_j (1 - z_j)`` vanishes (for example, all risks with
+    positive exposure have full credibility) and the portfolio is balanced
+    for any ``m``. In the balanced model (equal ``z`` and ``c``) this ``m``
+    is the overall mean (8.11), and in the Bühlmann-Straub model, where
     ``c_j (1 - z_j) = (s**2 / a) z_j``, it is the credibility weighted mean
     ``X_zw`` of (8.32) (Remark 8.4.4, p. 220). The derivation is in
     ``docs/topic_4/credibility_premium.md``.
@@ -237,6 +238,29 @@ def credibility_premium_properties(
         "within_bounds": np.asarray(within, dtype=np.bool_),
         "portfolio_imbalance": np.asarray(imbalance, dtype=np.float64),
     }
+
+
+def _scaled_difference(
+    factor: npt.NDArray[np.float64] | float,
+    x: npt.NDArray[np.float64],
+    m: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """Computes ``factor * (x - m)`` without a spurious overflow.
+
+    ``factor * (x - m)`` is the accurate form when ``x`` and ``m`` are
+    close, because the subtraction is exact or nearly so. It overflows,
+    however, when ``x - m`` exceeds the float64 range even though the
+    scaled result does not, for example ``0.5 * (1e308 - (-1e308))``. Only
+    there, where ``x`` and ``m`` have opposite signs and nothing cancels,
+    the result is taken from ``factor * x - factor * m``, which overflows
+    only if the true result does.
+    """
+    with np.errstate(over="ignore", invalid="ignore"):
+        deviation = x - m
+        direct = factor * deviation
+        expanded = factor * x - factor * m
+    result = np.where(np.isfinite(deviation), direct, expanded)
+    return np.asarray(result, dtype=np.float64)
 
 
 def _inputs(

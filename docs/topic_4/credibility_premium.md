@@ -116,7 +116,11 @@ of Topic 3 in exactly this form.
    Σ c_j P_j - Σ c_j X_j = Σ c_j (1 - z_j)(m - X_j),
    ```
 
-   which is zero exactly when `m = Σ c_j (1 - z_j) X_j / Σ c_j (1 - z_j)`.
+   which is zero exactly when `m = Σ c_j (1 - z_j) X_j / Σ c_j (1 - z_j)`,
+   provided `Σ c_j (1 - z_j) > 0`. If that sum is zero, every term
+   `c_j (1 - z_j)` is zero (since `c_j >= 0` and `0 <= z_j <= 1`), for example
+   when all risks with positive exposure have full credibility, and the
+   portfolio is balanced for any `m`.
 
    - In the balanced model (equal `z` and `c`), this is the overall mean.
    - In the Bühlmann-Straub model, `c_j = w_j` and
